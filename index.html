@@ -2,218 +2,135 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>LINE 線上預約</title>
+<title>LINE 預約表單</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <!-- LIFF -->
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
-<!-- 日期套件 flatpickr -->
+<!-- 日期套件 -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh-tw.js"></script>
 
-<style>
-  body {
-    font-family: "Noto Sans TC", sans-serif;
-    background: #f5f5f5;
-    margin: 0;
-    padding: 0;
-  }
-
-  .container {
-    max-width: 480px;
-    margin: 0 auto;
-    padding: 20px;
-  }
-
-  /* 頂部歡迎詞 */
-  .welcome {
-    font-size: 22px;
-    margin-bottom: 20px;
-    font-weight: 700;
-  }
-  .welcome span {
-    color: #06C755; /* LINE 綠 */
-    font-weight: 900;
-  }
-
-  h2 {
-    font-size: 20px;
-    margin-bottom: 18px;
-    text-align: center;
-    font-weight: 900;
-  }
-
-  .section {
-    background: #fff;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
-    margin-bottom: 20px;
-  }
-
-  .field-group {
-    margin-bottom: 18px;
-  }
-
-  .field-group label {
-    display: block;
-    font-size: 15px;
-    font-weight: 700;
-    margin-bottom: 6px;
-  }
-
-  .required {
-    color: #d32f2f;
-    font-weight: 700;
-    margin-left: 4px;
-  }
-
-  input, select, textarea {
-    width: 100%;
-    padding: 12px;
-    font-size: 16px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-sizing: border-box;
-  }
-
-  /* 日期欄位小圖示 */
-  .date-group {
-    position: relative;
-  }
-  .date-icon {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    pointer-events: none;
-  }
-
-  /* 營業日備註 */
-  .date-note {
-    margin-top: 6px;
-    font-size: 13px;
-    color: #555;
-  }
-
-  button[type="submit"] {
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 10px;
-    background: #06C755;
-    color: white;
-    font-size: 18px;
-    font-weight: 900;
-    margin-top: 10px;
-  }
-
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
 <div class="container">
 
-  <!-- 顯示使用者名稱 -->
-  <div class="username"><span id="displayName"></span> 您好～</div>
-
-  <h2>線上預約表單</h2>
-
-  <div class="section">
-    <form id="liffForm">
-
-      <!-- 隱藏：UID / Email -->
-      <input type="hidden" id="line_uid">
-      <input type="hidden" id="line_email">
-
-      <!-- 手機 -->
-      <div class="field-group">
-        <label>手機<span class="required">（必填）</span></label>
-        <input type="tel" id="phone" required placeholder="0912345678"
-          maxlength="10" pattern="09[0-9]{8}" inputmode="numeric">
-      </div>
-
-      <!-- 預約日期 -->
-      <div class="field-group date-group">
-        <label>預約日期<span class="required">（必填）</span></label>
-        <input type="text" id="date" required placeholder="請選擇日期" readonly>
-        <span class="date-icon">📅</span>
-        <div class="date-note">營業日：六日 & 國定假日</div>
-      </div>
-
-      <!-- 預約時段 -->
-      <div class="field-group">
-        <label>預約時段<span class="required">（必填）</span></label>
-        <select id="time" required>
-          <option disabled selected>請選擇</option>
-          <option>11:30</option>
-          <option>13:30</option>
-          <option>15:30</option>
-        </select>
-      </div>
-
-      <!-- 大人人數 -->
-      <div class="field-group">
-        <label>大人人數<span class="required">（必填）</span></label>
-        <select id="adult">
-          <option disabled selected>請選擇</option>
-          <script>
-            document.write(
-              Array.from({length: 30}, (_, i)=> i+1)
-              .map(n => `<option>${n} 位</option>`).join("")
-            );
-          </script>
-        </select>
-      </div>
-
-      <!-- 小孩人數 -->
-      <div class="field-group">
-        <label>小孩人數<span class="required">（必填）</span></label>
-        <select id="child">
-          <option>無</option>
-          <script>
-            document.write(
-              Array.from({length: 10}, (_, i)=> i+1)
-              .map(n => `<option>${n} 位</option>`).join("")
-            );
-          </script>
-        </select>
-      </div>
-
-      <!-- 兒童坐椅 -->
-      <div class="field-group">
-        <label>兒童坐椅</label>
-        <select id="seat">
-          <option>無</option>
-          <script>
-            document.write(
-              Array.from({length: 5}, (_, i)=> i+1)
-              .map(n => `<option>${n} 張</option>`).join("")
-            );
-          </script>
-        </select>
-      </div>
-
-      <!-- 備註 -->
-      <div class="field-group">
-        <label>備註</label>
-        <textarea id="note" rows="3" placeholder="可填寫備註…"></textarea>
-      </div>
-
-      <button type="submit">送出預約</button>
-
-    </form>
+  <!-- 顯示使用者 -->
+  <div class="username">
+    <span id="displayName" class="green-name"></span> 您好～
   </div>
 
+  <h2>請填寫預約資訊</h2>
+
+  <form id="liffForm">
+
+    <!-- 隱藏 -->
+    <input type="hidden" id="line_uid">
+    <input type="hidden" id="line_email">
+    <input type="hidden" id="name">
+
+    <!-- 手機 -->
+    <div class="field-group">
+      <label>
+        手機號碼 <span class="label-required">（必填）</span>
+      </label>
+      <input type="tel" id="phone" required placeholder="0912345678"
+             maxlength="10" pattern="09[0-9]{8}" inputmode="numeric">
+    </div>
+
+    <!-- 日期 -->
+    <div class="field-group date-group">
+      <label>
+        預約日期 <span class="label-required">（必填）</span>
+      </label>
+      <input type="text" id="date" required placeholder="請選擇日期" readonly>
+      <span class="date-icon">📅</span>
+      <div class="hint">營業日：六日與國定假日</div>
+    </div>
+
+    <!-- 預約時段 -->
+    <div class="field-group">
+      <label>
+        預約時段 <span class="label-required">（必填）</span>
+      </label>
+      <select id="time" required>
+        <option value="" disabled selected>請選擇</option>
+        <option>11:30</option>
+        <option>13:30</option>
+        <option>15:30</option>
+      </select>
+    </div>
+
+    <!-- 大人 -->
+    <div class="field-group">
+      <label>
+        大人人數 <span class="label-required">（必填）</span>
+      </label>
+      <select id="adult" required>
+        <option value="" disabled selected>請選擇</option>
+        <script>
+          document.write(
+            Array.from({length: 30}, (_, i) => i + 1)
+            .map(n => `<option value="${n}">${n} 位</option>`)
+            .join("")
+          );
+        </script>
+      </select>
+    </div>
+
+    <!-- 小孩 -->
+    <div class="field-group">
+      <label>
+        小孩人數 <span class="label-required">（必填）</span>
+      </label>
+      <select id="child" required>
+        <option value="無" selected>無</option>
+        <script>
+          document.write(
+            Array.from({length: 10}, (_, i) => i + 1)
+            .map(n => `<option value="${n}">${n} 位</option>`)
+            .join("")
+          );
+        </script>
+      </select>
+    </div>
+
+    <!-- 兒童坐椅 -->
+    <div class="field-group">
+      <label>兒童坐椅</label>
+      <select id="chair">
+        <option value="無" selected>無</option>
+        <script>
+          document.write(
+            Array.from({length: 5}, (_, i) => i + 1)
+            .map(n => `<option value="${n}">${n} 張</option>`)
+            .join("")
+          );
+        </script>
+      </select>
+    </div>
+
+    <!-- 備註 -->
+    <div class="field-group">
+      <label>備註</label>
+      <textarea id="note" rows="3" placeholder="可填寫特殊需求…"></textarea>
+    </div>
+
+    <button type="submit">送出預約</button>
+
+  </form>
 </div>
 
+
 <script>
-// ----------------------------
-//     初始化 LIFF
-// ----------------------------
+/* -------------------------
+    LIFF 初始化
+-------------------------- */
 async function initLIFF() {
   await liff.init({ liffId: "2008409020-k4Oy7Y0D" });
 
@@ -227,14 +144,15 @@ async function initLIFF() {
 
   document.getElementById("line_uid").value = profile.userId;
   document.getElementById("line_email").value = token?.email || "";
+  document.getElementById("name").value = profile.displayName;
 
-  // 顯示使用者名稱
-  document.getElementById("userName").textContent = profile.displayName || "朋友";
+  // 顯示綠色姓名
+  document.getElementById("displayName").innerText = profile.displayName;
 }
 
-// ----------------------------
-//     日期選擇器
-// ----------------------------
+/* -------------------------
+    日期選擇器
+-------------------------- */
 function initDatePicker() {
   flatpickr("#date", {
     locale: "zh_tw",
@@ -243,30 +161,32 @@ function initDatePicker() {
   });
 }
 
-// ----------------------------
-//     DOM Ready
-// ----------------------------
+/* -------------------------
+   DOM ready
+-------------------------- */
 document.addEventListener("DOMContentLoaded", () => {
   initLIFF();
   initDatePicker();
 });
 
-// ----------------------------
-//     表單送出
-// ----------------------------
-document.getElementById("liffForm").addEventListener("submit", function (e) {
+/* -------------------------
+  表單送出 → resultSend.html
+-------------------------- */
+document.getElementById("liffForm").addEventListener("submit", function(e) {
   e.preventDefault();
 
   const params = new URLSearchParams();
-  params.append("uid", document.getElementById("line_uid").value);
+
+  params.append("uid",   document.getElementById("line_uid").value);
   params.append("email", document.getElementById("line_email").value);
+  params.append("name",  document.getElementById("name").value);
   params.append("phone", document.getElementById("phone").value);
-  params.append("date", document.getElementById("date").value);
-  params.append("time", document.getElementById("time").value);
+  params.append("date",  document.getElementById("date").value);
+  params.append("time",  document.getElementById("time").value);
   params.append("adult", document.getElementById("adult").value);
   params.append("child", document.getElementById("child").value);
-  params.append("seat", document.getElementById("seat").value);
-  params.append("note", document.getElementById("note").value);
+  params.append("chair", document.getElementById("chair").value);
+  params.append("note",  document.getElementById("note").value);
 
   window.location.href = "resultSend.html?" + params.toString();
 });
