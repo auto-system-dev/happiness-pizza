@@ -54,15 +54,15 @@ const API_URL =
   const url = new URL(window.location.href);
 
   const data = {
-    uid:   url.searchParams.get("uid"),
-    phone: url.searchParams.get("phone"),
-    date:  url.searchParams.get("date"),
-    time:  url.searchParams.get("time"),
-    adult: url.searchParams.get("adult"),
-    child: url.searchParams.get("child"),
-    seat:  url.searchParams.get("seat"),
-    note:  url.searchParams.get("note") || "無"
-  };
+  uid: url.searchParams.get("uid"),
+  phone: url.searchParams.get("phone"),
+  date: url.searchParams.get("date"),
+  time: url.searchParams.get("time"),
+  adult: url.searchParams.get("adult"),
+  child: url.searchParams.get("child"), // 0–10
+  seat: url.searchParams.get("seat") || "無", // 兒童椅
+  note: url.searchParams.get("note") || "無"
+};
 
   console.log("送到 GAS 的 data:", data);
 
@@ -91,74 +91,78 @@ const API_URL =
   /* ------------------------------------
       5. Flex Message 圖卡
   ------------------------------------ */
-  const flexMsg = {
-    type: "flex",
-    altText: "您的預約已送出！",
-    contents: {
-      type: "bubble",
-      size: "mega",
-      hero: {
-        type: "image",
-        url: "https://i.imgur.com/RFqVg1C.png",
-        size: "full",
-        aspectRatio: "16:9",
-        aspectMode: "cover"
-      },
-      body: {
-        type: "box",
-        layout: "vertical",
-        spacing: "md",
-        contents: [
-          {
-            type: "text",
-            text: "🍽 預約成功",
-            weight: "bold",
-            size: "xl",
-            color: "#06C755"
-          },
-          {
-            type: "text",
-            text: `${profile ? profile.displayName : "顧客"} 您好！`,
-            size: "md",
-            weight: "bold",
-            margin: "md"
-          },
-          {
-            type: "separator",
-            margin: "sm"
-          },
-          {
-            type: "box",
-            layout: "vertical",
-            margin: "md",
-            spacing: "sm",
-            contents: [
-              { type: "text", text: `📅 預約日期：${data.date}` },
-              { type: "text", text: `⏰ 預約時段：${data.time}` },
-              { type: "text", text: `👨‍👩‍👧‍👦 大人：${data.adult} 位` },
-              { type: "text", text: `🧒 小孩：${data.child} 位` },
-              { type: "text", text: `🪑 兒童椅：${data.seat}` },
-              { type: "text", text: `📱 手機：${data.phone}` },
-              { type: "text", text: `📝 備註：${data.note}` }
-            ]
-          }
-        ]
-      },
-      footer: {
-        type: "box",
-        layout: "vertical",
-        contents: [
-          {
-            type: "text",
-            text: "我們已收到您的預約，將盡快與您確認！",
-            size: "sm",
-            color: "#888888",
-            wrap: true
-          }
-        ]
-      }
+const flexMsg = {
+  type: "flex",
+  altText: "您的預約已送出！",
+  contents: {
+    type: "bubble",
+    size: "mega",
+
+    /* ❌ 移除 hero 區塊（避免 Imgur 英文字圖） */
+    // hero: { ... } ← 整段刪除
+
+    body: {
+      type: "box",
+      layout: "vertical",
+      spacing: "md",
+      contents: [
+        {
+          type: "text",
+          text: "🍽 預約成功",
+          weight: "bold",
+          size: "xl",
+          color: "#06C755"
+        },
+        {
+          type: "text",
+          text: `${data.name || ""} 您好！`,
+          size: "md",
+          weight: "bold",
+          margin: "md"
+        },
+        {
+          type: "separator",
+          margin: "md"
+        },
+        {
+          type: "box",
+          layout: "vertical",
+          margin: "md",
+          spacing: "sm",
+          contents: [
+            { type: "text", text: `📅 預約日期：${data.date}`, wrap: true },
+            { type: "text", text: `⏰ 預約時段：${data.time}`, wrap: true },
+            { type: "text", text: `🧑‍🦱 大人：${data.adult} 位`, wrap: true },
+
+            /* 小孩人數：0~10（若是 0 → 顯示「0 位」） */
+            { type: "text", text: `🧒 小孩：${data.child} 位`, wrap: true },
+
+            /* 兒童椅：未填時自動顯示「無」 */
+            { type: "text", text: `🪑 兒童椅：${data.seat || "無"}`, wrap: true },
+
+            { type: "text", text: `📱 手機：${data.phone}`, wrap: true },
+            { type: "text", text: `📝 備註：${data.note}`, wrap: true }
+          ]
+        }
+      ]
+    },
+    footer: {
+      type: "box",
+      layout: "vertical",
+      spacing: "md",
+      contents: [
+        {
+          type: "text",
+          text: "我們已收到您的預約，將盡快與您確認！",
+          size: "sm",
+          color: "#888888",
+          wrap: true
+        }
+      ]
     }
-  };
+  }
+};
+
 
   /* ------------------------------------
       6. 回傳 Flex 訊息到 LINE
