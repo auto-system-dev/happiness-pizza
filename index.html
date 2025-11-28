@@ -8,80 +8,78 @@
 <!-- LIFF -->
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
-<!-- 日期 flatpickr -->
+<!-- 日期套件 flatpickr -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh-tw.js"></script>
 
+<!-- 外部 CSS -->
 <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
 <div class="container">
-  <h2>請填寫以下資料</h2>
+  <h2>請填寫預約資料</h2>
 
   <form id="liffForm">
 
-    <!-- 隱藏：LINE UID / email / name -->
+    <!-- 隱藏：UID / EMAIL -->
     <input type="hidden" id="line_uid">
     <input type="hidden" id="line_email">
-    <input type="hidden" id="name">
 
     <!-- 顯示姓名但不可編輯 -->
     <div class="field-group">
-      <label>姓名（自動帶入）</label>
-      <input type="text" id="name_display" disabled>
+      <label>
+        <span class="label-title">姓名</span>
+      </label>
+      <input type="text" id="name" readonly style="background:#eee;">
     </div>
 
     <!-- 手機 -->
     <div class="field-group">
-      <label>手機（必填）</label>
-      <input
-        type="tel"
-        id="phone"
-        required
-        placeholder="0912345678"
-        maxlength="10"
-        pattern="09[0-9]{8}"
-        inputmode="numeric"
-      >
+      <label>
+        <span class="label-title">手機</span>
+        <span class="label-required">（必填）</span>
+      </label>
+      <input type="tel" id="phone" required placeholder="0912345678"
+             maxlength="10" pattern="09[0-9]{8}" inputmode="numeric">
     </div>
 
-    <!-- 預約日期 -->
+    <!-- 預約日期 (六日 + 國定假日) -->
     <div class="field-group date-group">
       <label>
         <span class="label-title">預約日期</span>
         <span class="label-required">（必填）</span>
       </label>
-      <input
-        type="text"
-        id="date"
-        required
-        placeholder="請選擇日期"
-        readonly
-      >
+      <input type="text" id="date" required placeholder="請選擇日期" readonly>
       <span class="date-icon">📅</span>
     </div>
 
     <!-- 預約時段 -->
     <div class="field-group">
-      <label>預約時段（必填）</label>
+      <label>
+        <span class="label-title">預約時段</span>
+        <span class="label-required">（必填）</span>
+      </label>
       <select id="time" required>
         <option disabled selected value="">請選擇</option>
-        <option>11:30</option>
-        <option>13:30</option>
-        <option>15:30</option>
+        <option value="11:30">11:30</option>
+        <option value="13:30">13:30</option>
+        <option value="15:30">15:30</option>
       </select>
     </div>
 
     <!-- 大人 -->
     <div class="field-group">
-      <label>大人人數（必填）</label>
+      <label>
+        <span class="label-title">大人人數</span>
+        <span class="label-required">（必填）</span>
+      </label>
       <select id="adult" required>
-        <option value="" disabled selected>請選擇</option>
         <script>
           document.write(
+            `<option disabled selected value="">請選擇</option>` +
             Array.from({length: 30}, (_, i) => i + 1)
               .map(n => `<option value="${n}">${n} 位</option>`)
               .join("")
@@ -92,7 +90,10 @@
 
     <!-- 小孩 -->
     <div class="field-group">
-      <label>小孩人數（必填）</label>
+      <label>
+        <span class="label-title">小孩人數</span>
+        <span class="label-required">（必填）</span>
+      </label>
       <select id="child" required>
         <option value="0">無</option>
         <script>
@@ -105,10 +106,13 @@
       </select>
     </div>
 
-    <!-- 兒童坐椅 -->
+    <!-- 兒童座椅 -->
     <div class="field-group">
-      <label>兒童坐椅</label>
-      <select id="chair">
+      <label>
+        <span class="label-title">兒童座椅</span>
+        <span class="label-required">（必填）</span>
+      </label>
+      <select id="chair" required>
         <option value="0">無</option>
         <script>
           document.write(
@@ -123,19 +127,17 @@
     <!-- 備註 -->
     <div class="field-group">
       <label>備註</label>
-      <textarea id="note" rows="3" placeholder="可填寫特殊需求…"></textarea>
+      <textarea id="note" rows="3" placeholder="可填寫備註、需求…"></textarea>
     </div>
 
     <button type="submit">送出資料</button>
-
   </form>
 </div>
 
-
 <script>
-/* =======================
-   LIFF 初始化
-======================= */
+/* =======================================
+   🔰 LIFF 初始化（抓使用者姓名）
+======================================= */
 async function initLIFF() {
   await liff.init({ liffId: "2008409020-k4Oy7Y0D" });
 
@@ -147,29 +149,22 @@ async function initLIFF() {
   const profile = await liff.getProfile();
 
   document.getElementById("line_uid").value = profile.userId;
-
-  document.getElementById("name").value = profile.displayName;
-  document.getElementById("name_display").value = profile.displayName;
+  document.getElementById("name").value = `${profile.displayName} 您好~`;
 
   const token = liff.getDecodedIDToken();
   document.getElementById("line_email").value = token?.email || "";
 }
 
-
-/* ===========================
-   日期：只允許週六、週日、假日
-=========================== */
-const holidays = [
-  "2025-01-01",
-  "2025-02-28",
-  "2025-04-04",
-  "2025-05-01",
-  "2025-06-09",
-  "2025-09-17",
-  "2025-10-10"
-];
-
+/* =======================================
+   📅 初始化日期選擇器（六日＋國定假日）
+======================================= */
 function initDatePicker() {
+  const holidays = [
+    "2025-01-01","2025-01-27","2025-01-28","2025-01-29",
+    "2025-02-28","2025-04-04","2025-06-06",
+    "2025-09-17","2025-10-10"
+  ];
+
   flatpickr("#date", {
     locale: "zh_tw",
     dateFormat: "Y-m-d",
@@ -177,29 +172,25 @@ function initDatePicker() {
     disable: [
       function(date) {
         const day = date.getDay();
-        const ymd = date.toISOString().slice(0, 10);
-        const isWeekend = day === 0 || day === 6;
-        const isHoliday = holidays.includes(ymd);
-        return !(isWeekend || isHoliday);  // ❌ 禁用非假日
+        const d = date.toISOString().split("T")[0];
+        return !(day === 0 || day === 6 || holidays.includes(d));
       }
     ]
   });
 }
 
-
-/* ===========================
-   DOM Ready
-=========================== */
+/* =======================================
+   🚀 DOM 載入後執行
+======================================= */
 document.addEventListener("DOMContentLoaded", () => {
   initLIFF();
   initDatePicker();
 });
 
-
-/* ===========================
-   表單送出 → resultSend.html
-=========================== */
-document.getElementById("liffForm").addEventListener("submit", function(e) {
+/* =======================================
+   📤 表單送出
+======================================= */
+document.getElementById("liffForm").addEventListener("submit", function (e) {
   e.preventDefault();
 
   const params = new URLSearchParams();
@@ -207,6 +198,7 @@ document.getElementById("liffForm").addEventListener("submit", function(e) {
   params.append("uid", document.getElementById("line_uid").value);
   params.append("email", document.getElementById("line_email").value);
   params.append("name", document.getElementById("name").value);
+
   params.append("phone", document.getElementById("phone").value);
   params.append("date", document.getElementById("date").value);
   params.append("time", document.getElementById("time").value);
