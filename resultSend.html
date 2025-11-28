@@ -2,25 +2,89 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>資料送出中…</title>
+<title>預約完成</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- LIFF SDK -->
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <style>
   body {
     font-family: "Noto Sans TC", sans-serif;
-    background: #f2f2f2;
+    background: #f5f5f5;
+    margin: 0;
+    padding: 0;
+  }
+
+  .header {
+    background: #06C755;
+    color: white;
     text-align: center;
-    padding: 40px;
+    padding: 16px;
     font-size: 22px;
+    font-weight: bold;
+  }
+
+  .container {
+    padding: 20px;
+  }
+
+  .box {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    margin-top: 16px;
+  }
+
+  .title {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 12px;
+  }
+
+  .item {
+    margin: 6px 0;
+    font-size: 16px;
+  }
+
+  .close-btn {
+    width: 90%;
+    margin: 30px auto;
+    display: block;
+    background: #06C755;
+    color: #fff;
+    border: none;
+    font-size: 20px;
+    padding: 14px;
+    border-radius: 50px;
   }
 </style>
 </head>
 
+
 <body>
-<p>正在處理您的預約資料，請稍候…</p>
+
+<div class="header">預約完成</div>
+
+<div class="container">
+  <div class="title">您的預約已送出</div>
+  <div>✔ 預約摘要已傳送至您的 LINE 聊天室</div>
+
+  <div class="box">
+    <div class="title">預約摘要</div>
+
+    <div class="item">📅 日期：<span id="d_date"></span></div>
+    <div class="item">⏰ 時段：<span id="d_time"></span></div>
+    <div class="item">🧑‍🧑‍🧒 大人：<span id="d_adult"></span> 位</div>
+    <div class="item">🧒 小孩：<span id="d_child"></span> 位</div>
+    <div class="item">🪑 兒童椅：<span id="d_seat"></span></div>
+    <div class="item">📱 手機：<span id="d_phone"></span></div>
+    <div class="item">📝 備註：<span id="d_note"></span></div>
+  </div>
+
+  <button class="close-btn" id="closeBtn">關閉視窗</button>
+</div>
+
 
 <script>
 const API_URL =
@@ -28,153 +92,101 @@ const API_URL =
 
 (async () => {
 
-  /* ------------------------------------
-      1. 初始化 LIFF（必要）
-  ------------------------------------ */
   await liff.init({
     liffId: "2008586106-kLrdO1gp",
     withLoginOnExternalBrowser: false
   });
 
-  const inClient = liff.isInClient();
-  console.log("是否在 LINE APP:", inClient);
-
-  /* 取得使用者資訊 ————(你之前漏掉這段!!) */
-  let profile = null;
-  try {
-    profile = await liff.getProfile();
-    console.log("使用者名稱:", profile.displayName);
-  } catch (err) {
-    console.error("⚠️ 無法取得 user profile:", err);
-  }
-
-  /* ------------------------------------
-      2. 取得 URL 參數
-  ------------------------------------ */
   const url = new URL(window.location.href);
 
   const data = {
-  uid: url.searchParams.get("uid"),
-  phone: url.searchParams.get("phone"),
-  date: url.searchParams.get("date"),
-  time: url.searchParams.get("time"),
-  adult: url.searchParams.get("adult"),
-  child: url.searchParams.get("child"), // 0–10
-  seat: url.searchParams.get("seat") || "0", // 兒童椅
-  note: url.searchParams.get("note") || "無"
-};
+    uid: url.searchParams.get("uid"),
+    phone: url.searchParams.get("phone"),
+    date: url.searchParams.get("date"),
+    time: url.searchParams.get("time"),
+    adult: url.searchParams.get("adult"),
+    child: url.searchParams.get("child"),
+    seat: url.searchParams.get("seat"),
+    note: url.searchParams.get("note") || "無"
+  };
 
-  console.log("送到 GAS 的 data:", data);
+  // 填入顯示
+  document.getElementById("d_date").innerText = data.date;
+  document.getElementById("d_time").innerText = data.time;
+  document.getElementById("d_adult").innerText = data.adult;
+  document.getElementById("d_child").innerText = data.child;
+  document.getElementById("d_seat").innerText = data.seat || "無";
+  document.getElementById("d_phone").innerText = data.phone;
+  document.getElementById("d_note").innerText = data.note;
 
-  /* ------------------------------------
-      3. 寫入 Google Sheet
-  ------------------------------------ */
+  // 寫入試算表（照舊）
   try {
-    const res = await fetch(API_URL, {
+    await fetch(API_URL, {
       method: "POST",
       body: JSON.stringify(data)
     });
-    console.log("GAS 回應狀態碼:", res.status);
   } catch (err) {
-    console.error("❌ GAS 寫入錯誤:", err);
+    console.error("❌ GAS 錯誤:", err);
   }
 
-  /* ------------------------------------
-      4. 不在 LINE → 顯示完成頁
-  ------------------------------------ */
-  if (!inClient) {
-    document.body.innerHTML =
-      "<p>資料已送出，請在 LINE App 內開啟才能收到預約確認。</p>";
-    return;
-  }
-
-  /* ------------------------------------
-      5. Flex Message 圖卡
-  ------------------------------------ */
-const flexMsg = {
-  type: "flex",
-  altText: "您的預約已送出！",
-  contents: {
-    type: "bubble",
-    size: "mega",
-
-    /* ❌ 移除 hero 區塊（避免 Imgur 英文字圖） */
-    // hero: { ... } ← 整段刪除
-
-    body: {
-      type: "box",
-      layout: "vertical",
-      spacing: "md",
-      contents: [
-        {
-          type: "text",
-          text: "🍽 預約成功",
-          weight: "bold",
-          size: "xl",
-          color: "#06C755"
-        },
-        {
-          type: "text",
-          text: `${data.name || ""} 您好！`,
-          size: "md",
-          weight: "bold",
-          margin: "md"
-        },
-        {
-          type: "separator",
-          margin: "md"
-        },
-        {
-          type: "box",
-          layout: "vertical",
-          margin: "md",
-          spacing: "sm",
-          contents: [
-            { type: "text", text: `📅 預約日期：${data.date}`, wrap: true },
-            { type: "text", text: `⏰ 預約時段：${data.time}`, wrap: true },
-            { type: "text", text: `🧑‍🦱 大人：${data.adult} 位`, wrap: true },
-
-            /* 小孩人數：0~10（若是 0 → 顯示「0 位」） */
-            { type: "text", text: `🧒 小孩：${data.child} 位`, wrap: true },
-
-            /* 兒童椅：未填時自動顯示「無」 */
-            { type: "text", text: `🪑 兒童椅：${data.seat || "無"}`, wrap: true },
-
-            { type: "text", text: `📱 手機：${data.phone}`, wrap: true },
-            { type: "text", text: `📝 備註：${data.note}`, wrap: true }
-          ]
-        }
-      ]
-    },
-    footer: {
-      type: "box",
-      layout: "vertical",
-      spacing: "md",
-      contents: [
-        {
-          type: "text",
-          text: "我們已收到您的預約，將盡快與您確認！",
-          size: "sm",
-          color: "#888888",
-          wrap: true
-        }
-      ]
+  /* --------------------------
+     生成 Flex 圖卡 (按下關閉視窗才送)
+  -------------------------- */
+  const flexMsg = {
+    type: "flex",
+    altText: "您的預約已送出！",
+    contents: {
+      type: "bubble",
+      size: "mega",
+      hero: {
+        type: "image",
+        url: "https://i.imgur.com/RFqVg1C.png",
+        size: "full",
+        aspectRatio: "16:9",
+        aspectMode: "cover"
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "md",
+        contents: [
+          {
+            type: "text",
+            text: "🍽 預約成功",
+            weight: "bold",
+            size: "xl",
+            color: "#06C755"
+          },
+          { type: "separator", margin: "md" },
+          {
+            type: "box",
+            layout: "vertical",
+            spacing: "sm",
+            contents: [
+              { type: "text", text: `📅 日期：${data.date}` },
+              { type: "text", text: `⏰ 時段：${data.time}` },
+              { type: "text", text: `🧑 大人：${data.adult} 位` },
+              { type: "text", text: `🧒 小孩：${data.child} 位` },
+              { type: "text", text: `🪑 兒童椅：${data.seat}` },
+              { type: "text", text: `📱 手機：${data.phone}` },
+              { type: "text", text: `📝 備註：${data.note}` }
+            ]
+          }
+        ]
+      }
     }
-  }
-};
+  };
 
+  // 按下「關閉視窗」→ 送 Flex 圖卡 → 關閉
+  document.getElementById("closeBtn").onclick = async () => {
+    try {
+      await liff.sendMessages([flexMsg]);
+    } catch (err) {
+      console.error("❌ Flex 傳送失敗：", err);
+    }
+    liff.closeWindow();
+  };
 
-  /* ------------------------------------
-      6. 回傳 Flex 訊息到 LINE
-  ------------------------------------ */
-  try {
-    await liff.sendMessages([flexMsg]);
-    console.log("✅ Flex 訊息已成功送出！");
-  } catch (e) {
-    console.error("❌ Flex 回傳失敗:", e);
-  }
-
-  liff.closeWindow();
 })();
 </script>
 
