@@ -89,8 +89,7 @@
         小孩人數 <span class="label-required">（必填）</span>
       </label>
       <select id="child" required>
-        <option value="無" selected>無</option>
-        <script>
+          <script>
           document.write(
             Array.from({length: 10}, (_, i) => i + 1)
             .map(n => `<option value="${n}">${n} 位</option>`)
