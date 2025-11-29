@@ -40,25 +40,25 @@ const API_URL =
 
 
   /* --------------------------
-     2. 取得 URL 參數
+     2. 取得 URL 參數（修正版）
   -------------------------- */
   const url = new URL(window.location.href);
 
   let data = {
-    name: url.searchParams.get("name") || "",
+    name:  url.searchParams.get("name")  || "",
     phone: url.searchParams.get("phone") || "",
-    date: url.searchParams.get("date") || "",
-    time: url.searchParams.get("time") || "",
+    date:  url.searchParams.get("date")  || "",
+    time:  url.searchParams.get("time")  || "",
     adult: url.searchParams.get("adult") || "",
     child: url.searchParams.get("child") || "",
-    seat: url.searchParams.get("seat") || "",
-    note: url.searchParams.get("note") || ""
+    seat:  url.searchParams.get("chair") || "",   // ⭐ 修正名稱
+    note:  url.searchParams.get("note")  || ""
   };
 
-  // ⭐ 預設值修正
+  /* ⭐ 預設值（小孩、兒童椅、備註） */
   if (!data.child) data.child = "0 位";
-  if (!data.seat) data.seat = "無";
-  if (!data.note) data.note = "無";
+  if (!data.seat)  data.seat  = "無";
+  if (!data.note)  data.note  = "無";
 
 
   /* --------------------------
@@ -75,7 +75,7 @@ const API_URL =
 
 
   /* --------------------------
-     4. 若不在 LINE -> 結束
+     4. 若不在 LINE App 中
   -------------------------- */
   if (!inClient) {
     document.body.innerHTML =
@@ -85,7 +85,7 @@ const API_URL =
 
 
   /* --------------------------
-     5. Flex Message — 沒有英文 / 沒空白
+     5. Flex Message（最終版）
   -------------------------- */
   const flexMsg = {
     type: "flex",
@@ -104,12 +104,9 @@ const API_URL =
             size: "xl",
             color: "#06C755"
           },
-          {
-            type: "separator",
-            margin: "md"
-          },
+          { type: "separator", margin: "md" },
 
-          /* ===== 詳細內容 ===== */
+          /* ✦ 預約資訊內容（順序已修正） */
           {
             type: "box",
             layout: "vertical",
@@ -121,18 +118,14 @@ const API_URL =
               { type: "text", text: `📅 預約日期：${data.date}`, wrap: true },
               { type: "text", text: `⏰ 預約時段：${data.time}`, wrap: true },
               { type: "text", text: `🧑 大人：${data.adult} 位`, wrap: true },
-              { type: "text", text: `🧒 小孩：${data.child} 位`, wrap: true },
+              { type: "text", text: `🧒 小孩：${data.child}`, wrap: true },
               { type: "text", text: `🪑 兒童椅：${data.seat}`, wrap: true },
               { type: "text", text: `📝 備註：${data.note}`, wrap: true }
             ]
           },
 
-          {
-            type: "separator",
-            margin: "md"
-          },
+          { type: "separator", margin: "md" },
 
-          /* 底部固定句子 */
           {
             type: "text",
             text: "我們已收到您的預約，將盡快與您確認訂位！",
@@ -148,7 +141,7 @@ const API_URL =
 
 
   /* --------------------------
-     6. 回傳 Flex
+     6. 回傳 Flex 給使用者
   -------------------------- */
   try {
     await liff.sendMessages([flexMsg]);
