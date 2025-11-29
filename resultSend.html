@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<title>預約完成</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>資料送出中…</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <!-- LIFF -->
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -11,82 +11,85 @@
 <style>
   body {
     font-family: "Noto Sans TC", sans-serif;
-    background: #e8f5e9;
-    margin: 0;
-    padding: 40px;
+    background: #f2f2f2;
     text-align: center;
-    font-size: 20px;
+    padding: 40px;
+    font-size: 22px;
   }
 </style>
 </head>
 
 <body>
-<p>正在為您送出預約資訊…</p>
+<p>正在為您送出預約資料⋯</p>
 
 <script>
 const API_URL =
   "https://script.google.com/macros/s/AKfycbz2looN-W2dOY9RgJN2A327WOEs_bFfl18T1OaPvI1N7dYHPMdoLkHN9Y-3wuY4lkQm/exec";
 
 (async () => {
-  /* -----------------------------------------
+
+  /* --------------------------
      1. 初始化 LIFF
-  ------------------------------------------ */
+  -------------------------- */
   await liff.init({
     liffId: "2008586106-kLrdO1gp",
     withLoginOnExternalBrowser: false
   });
 
+  const inClient = liff.isInClient();
+
+
+  /* --------------------------
+     2. 取得 URL 參數（完整資料）
+  -------------------------- */
   const url = new URL(window.location.href);
 
-  /* -----------------------------------------
-     2. 取得所有資料 + 統一單位（最重要修正）
-  ------------------------------------------ */
-  let name  = url.searchParams.get("name")  || "";
-  let phone = url.searchParams.get("phone") || "";
-  let date  = url.searchParams.get("date")  || "";
-  let time  = url.searchParams.get("time")  || "";
-  let adult = url.searchParams.get("adult") || "0";
-
-  let child = url.searchParams.get("child");
-  if (!child || child === "") child = "0";
-  child = `${child} 位`;
-
-  let seat = url.searchParams.get("chair");
-  if (!seat || seat === "" || seat === "無") {
-    seat = "0 張";
-  } else {
-    seat = `${seat} 張`;
-  }
-
-  let note = url.searchParams.get("note") || "無";
-
-  /* -----------------------------------------
-     3. 寫進 Google Sheet（不影響圖卡）
-  ------------------------------------------ */
-  const sheetData = {
-    name,
-    phone,
-    date,
-    time,
-    adult,
-    child,
-    seat,
-    note
+  let data = {
+    uid:   url.searchParams.get("uid")   || "",
+    name:  url.searchParams.get("name")  || "",
+    phone: url.searchParams.get("phone") || "",
+    date:  url.searchParams.get("date")  || "",
+    time:  url.searchParams.get("time")  || "",
+    adult: url.searchParams.get("adult") || "",
+    child: url.searchParams.get("child") || "",
+    seat:  url.searchParams.get("chair") || "",
+    note:  url.searchParams.get("note")  || ""
   };
 
+  /* 預設值修正 */
+  if (!data.child) data.child = "0";
+  if (!data.seat)  data.seat  = "0";
+  if (!data.note)  data.note  = "無";
+
+
+  /* --------------------------
+     3. 寫入 Google Sheet
+  -------------------------- */
   try {
     await fetch(API_URL, {
       method: "POST",
-      body: JSON.stringify(sheetData)
+      body: JSON.stringify(data)
     });
   } catch (err) {
-    console.error("❌ 寫入試算表錯誤:", err);
+    console.error("❌ 寫入失敗：", err);
   }
 
-  /* -----------------------------------------
-     4. 直接傳 LINE Flex 圖卡
-  ------------------------------------------ */
 
+  /* --------------------------
+     4. 若不是在 LINE → 中止
+  -------------------------- */
+  if (!inClient) {
+    document.body.innerHTML =
+      "<p>資料已送出，請回到 LINE App 查看預約確認。</p>";
+    return;
+  }
+
+
+  /* --------------------------
+     5. Flex Message（最終版）
+     --- 已驗證可用（避免 INVALID_MESSAGE）
+  -------------------------- */
+  
   const flexMsg = {
     type: "flex",
     altText: "預約成功",
@@ -105,6 +108,7 @@ const API_URL =
             size: "xl",
             color: "#06C755"
           },
+
           { type: "separator", margin: "md" },
 
           {
@@ -112,14 +116,14 @@ const API_URL =
             layout: "vertical",
             spacing: "sm",
             contents: [
-              { type: "text", text: `👤 姓名：${name}`, wrap: true },
-              { type: "text", text: `📱 手機：${phone}`, wrap: true },
-              { type: "text", text: `📅 預約日期：${date}`, wrap: true },
-              { type: "text", text: `⏰ 預約時段：${time}`, wrap: true },
-              { type: "text", text: `🧑 大人：${adult} 位`, wrap: true },
-              { type: "text", text: `🧒 小孩：${child}`, wrap: true },
-              { type: "text", text: `🪑 兒童椅：${seat}`, wrap: true },
-              { type: "text", text: `📝 備註：${note}`, wrap: true }
+              { type: "text", text: `👤 姓名：${data.name}`, wrap: true },
+              { type: "text", text: `📱 手機：${data.phone}`, wrap: true },
+              { type: "text", text: `📅 預約日期：${data.date}`, wrap: true },
+              { type: "text", text: `⏰ 預約時段：${data.time}`, wrap: true },
+              { type: "text", text: `🧑 大人：${data.adult} 位`, wrap: true },
+              { type: "text", text: `🧒 小孩：${data.child} 位`, wrap: true },
+              { type: "text", text: `🪑 兒童椅：${data.seat} 張`, wrap: true },
+              { type: "text", text: `📝 備註：${data.note}`, wrap: true }
             ]
           },
 
@@ -129,7 +133,7 @@ const API_URL =
             type: "text",
             text: "我們已收到您的預約，將盡快與您確認訂位！",
             size: "sm",
-            color: "#666",
+            color: "#666666",
             wrap: true,
             margin: "md"
           }
@@ -138,13 +142,18 @@ const API_URL =
     }
   };
 
+
+  /* --------------------------
+     6. SEND FLEX
+  -------------------------- */
   try {
     await liff.sendMessages([flexMsg]);
     liff.closeWindow();
-  } catch (err) {
-    alert("❌ 圖卡發送失敗：" + err);
-    console.error(err);
+  } catch (e) {
+    alert("❌ 圖卡發送失敗：" + e);
+    console.error(e);
   }
+
 })();
 </script>
 
