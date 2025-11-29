@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>資料送出中…</title>
+<title>預約完成</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <!-- LIFF SDK -->
@@ -11,16 +11,67 @@
 <style>
   body {
     font-family: "Noto Sans TC", sans-serif;
-    background: #f2f2f2;
+    background: #e8f5e9;
+    margin: 0;
+    padding: 0;
+  }
+
+  .wrapper {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  .card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+
+  .title {
+    font-size: 26px;
+    font-weight: 900;
+    color: #06C755;
     text-align: center;
-    padding: 40px;
-    font-size: 22px;
+    margin-bottom: 12px;
+  }
+
+  .item {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #333;
+  }
+
+  .label {
+    font-weight: 700;
+  }
+
+  .footer {
+    margin-top: 18px;
+    padding-top: 12px;
+    border-top: 1px solid #ddd;
+    font-size: 15px;
+    color: #666;
+    text-align: center;
+    line-height: 1.5;
   }
 </style>
 </head>
 
 <body>
-<p>正在處理您的預約資料，請稍候…</p>
+
+<div class="wrapper">
+  <div id="summaryCard" class="card" style="display:none;">
+    <div class="title">🍽 預約成功</div>
+
+    <div id="summaryContent"></div>
+
+    <div class="footer">
+      我們已收到您的預約，將盡快與您確認訂位！
+    </div>
+  </div>
+</div>
 
 <script>
 const API_URL =
@@ -29,7 +80,7 @@ const API_URL =
 (async () => {
 
   /* --------------------------
-     1. 初始化 LIFF
+       1. 初始化 LIFF
   -------------------------- */
   await liff.init({
     liffId: "2008586106-kLrdO1gp",
@@ -40,7 +91,7 @@ const API_URL =
 
 
   /* --------------------------
-     2. 取得 URL 參數（修正版）
+       2. 取得 URL 參數
   -------------------------- */
   const url = new URL(window.location.href);
 
@@ -51,18 +102,36 @@ const API_URL =
     time:  url.searchParams.get("time")  || "",
     adult: url.searchParams.get("adult") || "",
     child: url.searchParams.get("child") || "",
-    seat:  url.searchParams.get("chair") || "",   // ⭐ 修正名稱
+    seat:  url.searchParams.get("chair") || "",
     note:  url.searchParams.get("note")  || ""
   };
 
-  /* ⭐ 預設值（小孩、兒童椅、備註） */
-  if (!data.child) data.child = "0 位";
+  // ⭐ 預設值
+  if (!data.child) data.child = "0";
   if (!data.seat)  data.seat  = "無";
   if (!data.note)  data.note  = "無";
 
 
   /* --------------------------
-     3. 寫入 Google Sheet
+       3. 渲染摘要頁（綠色卡片）
+  -------------------------- */
+  const summaryDiv = document.getElementById("summaryContent");
+  summaryDiv.innerHTML = `
+    <div class="item"><span class="label">👤 姓名：</span>${data.name}</div>
+    <div class="item"><span class="label">📱 手機：</span>${data.phone}</div>
+    <div class="item"><span class="label">📅 預約日期：</span>${data.date}</div>
+    <div class="item"><span class="label">⏰ 預約時段：</span>${data.time}</div>
+    <div class="item"><span class="label">🧑 大人：</span>${data.adult} 位</div>
+    <div class="item"><span class="label">🧒 小孩：</span>${data.child} 位</div>
+    <div class="item"><span class="label">🪑 兒童椅：</span>${data.seat}</div>
+    <div class="item"><span class="label">📝 備註：</span>${data.note}</div>
+  `;
+
+  document.getElementById("summaryCard").style.display = "block";
+
+
+  /* --------------------------
+       4. 寫入 Google Sheet
   -------------------------- */
   try {
     await fetch(API_URL, {
@@ -70,22 +139,18 @@ const API_URL =
       body: JSON.stringify(data)
     });
   } catch (err) {
-    console.error("❌ 寫入試算表錯誤:", err);
+    console.error("❌ GAS 錯誤：", err);
   }
 
 
   /* --------------------------
-     4. 若不在 LINE App 中
+       5. 若不在 LINE → 不送訊息
   -------------------------- */
-  if (!inClient) {
-    document.body.innerHTML =
-      "<p>資料已送出，請在 LINE App 內開啟才能收到預約確認。</p>";
-    return;
-  }
+  if (!inClient) return;
 
 
   /* --------------------------
-     5. Flex Message（最終版）
+       6. Flex Message 圖卡（順序一致）
   -------------------------- */
   const flexMsg = {
     type: "flex",
@@ -105,8 +170,6 @@ const API_URL =
             color: "#06C755"
           },
           { type: "separator", margin: "md" },
-
-          /* ✦ 預約資訊內容（順序已修正） */
           {
             type: "box",
             layout: "vertical",
@@ -118,14 +181,12 @@ const API_URL =
               { type: "text", text: `📅 預約日期：${data.date}`, wrap: true },
               { type: "text", text: `⏰ 預約時段：${data.time}`, wrap: true },
               { type: "text", text: `🧑 大人：${data.adult} 位`, wrap: true },
-              { type: "text", text: `🧒 小孩：${data.child}`, wrap: true },
+              { type: "text", text: `🧒 小孩：${data.child} 位`, wrap: true },
               { type: "text", text: `🪑 兒童椅：${data.seat}`, wrap: true },
               { type: "text", text: `📝 備註：${data.note}`, wrap: true }
             ]
           },
-
           { type: "separator", margin: "md" },
-
           {
             type: "text",
             text: "我們已收到您的預約，將盡快與您確認訂位！",
@@ -141,15 +202,14 @@ const API_URL =
 
 
   /* --------------------------
-     6. 回傳 Flex 給使用者
+       7. 傳送 Flex 圖卡
   -------------------------- */
   try {
     await liff.sendMessages([flexMsg]);
-  } catch (e) {
-    console.error("❌ Flex 回傳失敗:", e);
+  } catch (err) {
+    console.error("❌ Flex 送出錯誤：", err);
   }
 
-  liff.closeWindow();
 })();
 </script>
 
