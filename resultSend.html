@@ -76,17 +76,23 @@ async function init() {
   const url = new URL(window.location.href);
 
   // ⭐ 接收並修正數據（保持純數字）
-  const data = {
-    uid:   url.searchParams.get("uid")   || "",
-    name:  url.searchParams.get("name")  || "",
-    phone: url.searchParams.get("phone") || "",
-    date:  url.searchParams.get("date")  || "",
-    time:  url.searchParams.get("time")  || "",
-    adult: url.searchParams.get("adult") || "",
-    child: url.searchParams.get("child") || "0",  // ⭐ 純數字
-    seat:  url.searchParams.get("chair") || "0",   // ⭐ 純數字，0 = 無
-    note:  url.searchParams.get("note")  || "無",
-  };
+  const url = new URL(window.location.href);
+
+let childRaw = url.searchParams.get("child");
+let seatRaw = url.searchParams.get("chair");
+
+const data = {
+  uid:   url.searchParams.get("uid")   || "",
+  name:  url.searchParams.get("name")  || "",
+  phone: url.searchParams.get("phone") || "",
+  date:  url.searchParams.get("date")  || "",
+  time:  url.searchParams.get("time")  || "",
+  adult: url.searchParams.get("adult") || "",
+  child: childRaw ? `${childRaw} 位` : "0 位",
+  seat:  seatRaw  ? `${seatRaw} 張`  : "0 張",
+  note:  url.searchParams.get("note")  || "無"
+};
+
 
   // ⭐ 處理顯示用文字
   const childText = data.child === "0" ? "0 位" : `${data.child} 位`;
