@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>資料送出中…</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <!-- LIFF -->
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -14,23 +14,23 @@
     background: #f2f2f2;
     text-align: center;
     padding: 40px;
-    font-size: 22px;
+    font-size: 20px;
   }
 </style>
 </head>
 
 <body>
-<p>正在為您送出預約資料⋯</p>
+<p id="msg">正在為您送出預約資訊…</p>
 
 <script>
 const API_URL =
   "https://script.google.com/macros/s/AKfycbz2looN-W2dOY9RgJN2A327WOEs_bFfl18T1OaPvI1N7dYHPMdoLkHN9Y-3wuY4lkQm/exec";
 
+// -----------------------------
+// 🚀 立即執行
+// -----------------------------
 (async () => {
 
-  /* --------------------------
-     1. 初始化 LIFF
-  -------------------------- */
   await liff.init({
     liffId: "2008586106-kLrdO1gp",
     withLoginOnExternalBrowser: false
@@ -38,12 +38,9 @@ const API_URL =
 
   const inClient = liff.isInClient();
 
-
-  /* --------------------------
-     2. 取得 URL 參數（完整資料）
-  -------------------------- */
   const url = new URL(window.location.href);
 
+  // ⭐ 正確接收所有欄位
   let data = {
     uid:   url.searchParams.get("uid")   || "",
     name:  url.searchParams.get("name")  || "",
@@ -51,45 +48,41 @@ const API_URL =
     date:  url.searchParams.get("date")  || "",
     time:  url.searchParams.get("time")  || "",
     adult: url.searchParams.get("adult") || "",
-    child: url.searchParams.get("child") || "",
-    seat:  url.searchParams.get("chair") || "",
-    note:  url.searchParams.get("note")  || ""
+    child: url.searchParams.get("child") || "0",
+    seat:  url.searchParams.get("chair") || "無",
+    note:  url.searchParams.get("note")  || "無"
   };
 
-  /* 預設值修正 */
-  if (!data.child) data.child = "0";
-  if (!data.seat)  data.seat  = "0";
-  if (!data.note)  data.note  = "無";
+  // ⭐ 格式修正
+  data.child = data.child === "" ? "0" : data.child;
+  data.seat  = data.seat === "" ? "無" : data.seat;
+  data.note  = data.note === "" ? "無" : data.note;
 
-
-  /* --------------------------
-     3. 寫入 Google Sheet
-  -------------------------- */
+  // -----------------------------
+  // ✨ 寫入試算表
+  // -----------------------------
   try {
     await fetch(API_URL, {
       method: "POST",
       body: JSON.stringify(data)
     });
   } catch (err) {
-    console.error("❌ 寫入失敗：", err);
+    document.getElementById("msg").innerText = "❌ 試算表寫入失敗";
+    console.error(err);
   }
 
-
-  /* --------------------------
-     4. 若不是在 LINE → 中止
-  -------------------------- */
+  // -----------------------------
+  // ❗ 若不在 LINE → 結束
+  // -----------------------------
   if (!inClient) {
-    document.body.innerHTML =
-      "<p>資料已送出，請回到 LINE App 查看預約確認。</p>";
+    document.getElementById("msg").innerHTML =
+      "資料已送出，請回到 LINE 以收到確認訊息。";
     return;
   }
 
-
-  /* --------------------------
-     5. Flex Message（最終版）
-     --- 已驗證可用（避免 INVALID_MESSAGE）
-  -------------------------- */
-  
+  // -----------------------------
+  // 🎨 Flex 卡片（完全合法版本）
+  // -----------------------------
   const flexMsg = {
     type: "flex",
     altText: "預約成功",
@@ -108,9 +101,9 @@ const API_URL =
             size: "xl",
             color: "#06C755"
           },
-
           { type: "separator", margin: "md" },
 
+          // 資訊內容
           {
             type: "box",
             layout: "vertical",
@@ -133,27 +126,25 @@ const API_URL =
             type: "text",
             text: "我們已收到您的預約，將盡快與您確認訂位！",
             size: "sm",
-            color: "#666666",
-            wrap: true,
-            margin: "md"
+            color: "#666",
+            wrap: true
           }
         ]
       }
     }
   };
 
-
-  /* --------------------------
-     6. SEND FLEX
-  -------------------------- */
+  // -----------------------------
+  // 🚀 傳送 Flex 給 LINE
+  // -----------------------------
   try {
     await liff.sendMessages([flexMsg]);
     liff.closeWindow();
-  } catch (e) {
-    alert("❌ 圖卡發送失敗：" + e);
-    console.error(e);
+  } catch (err) {
+    document.getElementById("msg").innerHTML =
+      "❌ 圖卡發送失敗（格式錯誤）";
+    console.error("Flex 錯誤：", err);
   }
-
 })();
 </script>
 
